@@ -13,12 +13,8 @@ permissions:
 
 jobs:
   test:
-    name: Test (Go ${{ matrix.go-version }})
+    name: Test
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        go-version: ["1.22", "1.23", "1.24", "1.25"]
 
     steps:
       - name: Checkout
@@ -27,7 +23,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
-          go-version: ${{ matrix.go-version }}
+          go-version: "1.25"
           cache: true
 
       - name: Verify dependencies
@@ -37,13 +33,9 @@ jobs:
         run: go test ./...
 
   build:
-    name: Build (Go ${{ matrix.go-version }})
+    name: Build
     runs-on: ubuntu-latest
     needs: test
-    strategy:
-      fail-fast: false
-      matrix:
-        go-version: ["1.22", "1.23", "1.24", "1.25"]
 
     steps:
       - name: Checkout
@@ -52,7 +44,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
-          go-version: ${{ matrix.go-version }}
+          go-version: "1.25"
           cache: true
 
       - name: Build all packages
@@ -64,6 +56,6 @@ jobs:
       - name: Upload binaries
         uses: actions/upload-artifact@v4
         with:
-          name: traffic-cone-binaries-go${{ matrix.go-version }}
+          name: traffic-cone-binaries
           path: bin/
           retention-days: 7
