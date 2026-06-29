@@ -17,7 +17,6 @@ type RunConfig struct {
 	PIDFile      string
 	LogFile      string
 	DockerSocket string
-	TickInterval time.Duration
 }
 
 // Start runs the daemon event listening loop in the foreground.
@@ -30,9 +29,6 @@ func Start(cfg RunConfig) error {
 	}
 	if cfg.DockerSocket == "" {
 		return errors.New("docker socket is required")
-	}
-	if cfg.TickInterval <= 0 {
-		return errors.New("tick interval must be > 0")
 	}
 	if cfg.AppName == "" {
 		cfg.AppName = "daemon"
