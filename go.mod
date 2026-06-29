@@ -1,6 +1,6 @@
 module traffic-cone
 
-go 1.25.0
+go 1.22.0
 
 require github.com/moby/moby/client v0.5.0
 
