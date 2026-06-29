@@ -5,6 +5,7 @@ Generic Go CLI daemon scaffold where passing a daemon name starts it in foregrou
 ## Features
 
 - Foreground daemon runtime driven by a daemon name argument
+- Docker event watching via configured Docker socket
 - Periodic heartbeat loop (replace with your real workload)
 - Cross-platform process status checks (Windows + Unix)
 - Simple file-based logging
@@ -14,18 +15,6 @@ Generic Go CLI daemon scaffold where passing a daemon name starts it in foregrou
 ```bash
 go mod tidy
 go build -o bin/traffic-cone ./cmd/traffic-cone
-```
-
-Run a daemon in foreground:
-
-```bash
-./bin/traffic-cone worker
-```
-
-Use another daemon name:
-
-```bash
-./bin/traffic-cone scheduler -tick 2s -docker-socket /var/run/docker.sock
 ```
 
 ## CLI usage
