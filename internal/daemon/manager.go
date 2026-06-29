@@ -24,9 +24,6 @@ func Start(cfg RunConfig) error {
 	if cfg.PIDFile == "" {
 		return errors.New("pid file is required")
 	}
-	if cfg.LogFile == "" {
-		return errors.New("log file is required")
-	}
 	if cfg.DockerSocket == "" {
 		return errors.New("docker socket is required")
 	}
