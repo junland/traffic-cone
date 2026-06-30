@@ -1,0 +1,66 @@
+name: E2E
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: "1.25"
+          cache: true
+
+      - name: Build CLI binary
+        run: go build -o bin/traffic-cone ./cmd/traffic-cone
+
+      - name: Run traffic-cone and validate Docker events
+        run: |
+          # Start the daemon in the background
+          ./bin/traffic-cone e2e-daemon > e2e.log &
+          DAEMON_PID=$!
+          
+          # Wait a moment for the daemon to start and subscribe to events
+          sleep 2
+          
+          # Launch a few Docker containers
+          docker run --name e2e-test-1 --rm alpine echo "Running container 1"
+          docker run --name e2e-test-2 --rm alpine echo "Running container 2"
+          
+          # Wait for events to be processed
+          sleep 2
+          
+          # Terminate the daemon
+          kill $DAEMON_PID || true
+          
+          # Display the output for debugging
+          echo "Daemon output:"
+          cat e2e.log
+          
+          # Validate that it captured the events for both containers
+          if ! grep -q "e2e-test-1" e2e.log; then
+            echo "Validation failed: e2e-test-1 not found in daemon output"
+            exit 1
+          fi
+          
+          if ! grep -q "e2e-test-2" e2e.log; then
+            echo "Validation failed: e2e-test-2 not found in daemon output"
+            exit 1
+          fi
+          
+          echo "Validation successful!"

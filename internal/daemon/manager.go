@@ -51,7 +51,7 @@ func Start(cfg RunConfig) error {
 	logger.Printf("%s daemon running (pid=%d, docker-socket=%s)", cfg.AppName, os.Getpid(), cfg.DockerSocket)
 
 	// Initialize Docker client
-	cli, err := client.New(client.WithHost(cfg.DockerSocket))
+	cli, err := client.New(client.WithHost(dockerHostFromSocket(cfg.DockerSocket)))
 	if err != nil {
 		return fmt.Errorf("failed to create Docker client: %w", err)
 	}
