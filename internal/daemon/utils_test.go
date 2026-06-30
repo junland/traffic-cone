@@ -1,6 +1,7 @@
 package daemon
 
 import (
+	"math"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -131,9 +132,8 @@ func TestProcessExistsNonexistentPID(t *testing.T) {
 	t.Parallel()
 
 	// math.MaxInt32 is safely beyond any real PID on Linux/macOS.
-	const impossiblePID = 1<<31 - 1
-	if processExists(impossiblePID) {
-		t.Fatalf("expected pid %d to not exist", impossiblePID)
+	if processExists(math.MaxInt32) {
+		t.Fatalf("expected pid %d to not exist", math.MaxInt32)
 	}
 }
 
