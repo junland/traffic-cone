@@ -99,6 +99,44 @@ func TestAcquirePIDFileWritesAndReleases(t *testing.T) {
 	}
 }
 
+func TestAcquirePIDFilePreventsDoubleAcquire(t *testing.T) {
+	t.Parallel()
+
+	pidFile := filepath.Join(t.TempDir(), "daemon.pid")
+
+	release, err := acquirePIDFile(pidFile)
+	if err != nil {
+		t.Fatalf("first acquirePIDFile returned error: %v", err)
+	}
+	defer release()
+
+	_, err = acquirePIDFile(pidFile)
+	if err == nil {
+		t.Fatal("expected error on second acquire, got nil")
+	}
+	if !strings.Contains(err.Error(), "already running") {
+		t.Fatalf("expected 'already running' error, got %q", err.Error())
+	}
+}
+
+func TestProcessExistsCurrentProcess(t *testing.T) {
+	t.Parallel()
+
+	if !processExists(os.Getpid()) {
+		t.Fatal("expected current process to exist")
+	}
+}
+
+func TestProcessExistsNonexistentPID(t *testing.T) {
+	t.Parallel()
+
+	// math.MaxInt32 is safely beyond any real PID on Linux/macOS.
+	const impossiblePID = 1<<31 - 1
+	if processExists(impossiblePID) {
+		t.Fatalf("expected pid %d to not exist", impossiblePID)
+	}
+}
+
 func TestDockerHostFromSocket(t *testing.T) {
 	t.Parallel()
 
