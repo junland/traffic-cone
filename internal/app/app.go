@@ -21,6 +21,7 @@ func Run(args []string) int {
 
 	pidFile := flags.String("pid-file", filepath.Join(os.TempDir(), fmt.Sprintf("%s.pid", daemonName)), "Path to PID file")
 	dockerSocket := flags.String("docker-socket", "/var/run/docker.sock", "Path to Docker socket")
+	logFile := flags.String("log-file", filepath.Join(os.TempDir(), fmt.Sprintf("%s.log", daemonName)), "Path to log file")
 
 	if err := flags.Parse(args[1:]); err != nil {
 		fmt.Fprintf(os.Stderr, "Error parsing flags: %v\n", err)
@@ -30,6 +31,7 @@ func Run(args []string) int {
 	cfg := daemon.RunConfig{
 		AppName:      daemonName,
 		PIDFile:      *pidFile,
+		LogFile:      *logFile,
 		DockerSocket: *dockerSocket,
 	}
 
