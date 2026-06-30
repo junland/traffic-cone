@@ -26,7 +26,6 @@ Behavior:
 Common flags:
 
 - `-pid-file` Path to PID file (default: `./<daemon-name>.pid`)
-- `-log-file` Path to log file (default: `./<daemon-name>.log`)
 - `-docker-socket` Path to Docker socket (default: `/var/run/docker.sock`)
 
 ## Build with version metadata
