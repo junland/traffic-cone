@@ -4,11 +4,7 @@ A daemon that listens for Docker events and prints the container names to stdout
 
 ## Features
 
-- Foreground daemon runtime driven by a daemon name argument
 - Docker event watching via configured Docker socket
-- Periodic heartbeat loop (replace with your real workload)
-- Cross-platform process status checks (Windows + Unix)
-- Simple file-based logging
 
 ## Quick start
 
