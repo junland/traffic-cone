@@ -17,6 +17,7 @@ func Run(args []string) int {
 	}
 
 	daemonName := args[0]
+	logFile := filepath.Join(os.TempDir(), fmt.Sprintf("%s.log", daemonName))
 	flags := flag.NewFlagSet(daemonName, flag.ExitOnError)
 
 	pidFile := flags.String("pid-file", filepath.Join(os.TempDir(), fmt.Sprintf("%s.pid", daemonName)), "Path to PID file")
@@ -30,7 +31,7 @@ func Run(args []string) int {
 	cfg := daemon.RunConfig{
 		AppName:      daemonName,
 		PIDFile:      *pidFile,
-		LogFile:      filepath.Join(os.TempDir(), fmt.Sprintf("%s.log", daemonName)),
+		LogFile:      logFile,
 		DockerSocket: *dockerSocket,
 	}
 
