@@ -16,6 +16,10 @@ func Run(args []string) int {
 		return 1
 	}
 
+	daemonName := args[0]
+	flags := flag.NewFlagSet(daemonName, flag.ContinueOnError)
+	flags.SetOutput(os.Stderr)
+
 	pidFile := flags.String("pid-file", filepath.Join(os.TempDir(), fmt.Sprintf("%s.pid", daemonName)), "Path to PID file")
 	dockerSocket := flags.String("docker-socket", "/var/run/docker.sock", "Path to Docker socket")
 
@@ -30,7 +34,7 @@ func Run(args []string) int {
 	}
 
 	if err := daemon.Start(cfg); err != nil {
-		fmt.Fprintf(os.Stderr, "Error starting traffic-cone\n", err)
+		fmt.Fprintf(os.Stderr, "Error starting traffic-cone: %v\n", err)
 		return 1
 	}
 
