@@ -12,12 +12,9 @@ import (
 // Run is the main entry point for the application.
 func Run(args []string) int {
 	if len(args) < 1 {
-		fmt.Fprintln(os.Stderr, "Usage: traffic-cone <daemon-name> [flags]")
+		fmt.Fprintln(os.Stderr, "Usage: traffic-cone [flags]")
 		return 1
 	}
-
-	daemonName := args[0]
-	flags := flag.NewFlagSet(daemonName, flag.ExitOnError)
 
 	pidFile := flags.String("pid-file", filepath.Join(os.TempDir(), fmt.Sprintf("%s.pid", daemonName)), "Path to PID file")
 	dockerSocket := flags.String("docker-socket", "/var/run/docker.sock", "Path to Docker socket")
@@ -29,14 +26,13 @@ func Run(args []string) int {
 	}
 
 	cfg := daemon.RunConfig{
-		AppName:      daemonName,
 		PIDFile:      *pidFile,
 		LogFile:      *logFile,
 		DockerSocket: *dockerSocket,
 	}
 
 	if err := daemon.Start(cfg); err != nil {
-		fmt.Fprintf(os.Stderr, "Error starting daemon: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error starting traffic-cone\n", err)
 		return 1
 	}
 
