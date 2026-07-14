@@ -16,6 +16,7 @@ func Run(args []string) int {
 		return 1
 	}
 
+	// The first CLI argument names the daemon instance; remaining args are flags.
 	daemonName := args[0]
 	flags := flag.NewFlagSet(daemonName, flag.ContinueOnError)
 	flags.SetOutput(os.Stderr)
@@ -34,7 +35,7 @@ func Run(args []string) int {
 	}
 
 	if err := daemon.Start(cfg); err != nil {
-		fmt.Fprintf(os.Stderr, "Error starting traffic-cone: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error starting %s: %v\n", daemonName, err)
 		return 1
 	}
 
