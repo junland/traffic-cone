@@ -24,11 +24,9 @@ func Start(cfg RunConfig) error {
 	if cfg.PIDFile == "" {
 		return errors.New("pid file is required")
 	}
+	
 	if cfg.DockerSocket == "" {
 		return errors.New("docker socket is required")
-	}
-	if cfg.AppName == "" {
-		cfg.AppName = "daemon"
 	}
 
 	releasePID, err := acquirePIDFile(cfg.PIDFile)
@@ -37,18 +35,7 @@ func Start(cfg RunConfig) error {
 	}
 	defer releasePID()
 
-	if err := ensureParentDir(cfg.LogFile); err != nil {
-		return fmt.Errorf("prepare log path: %w", err)
-	}
-
-	logFile, err := os.OpenFile(cfg.LogFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
-	if err != nil {
-		return fmt.Errorf("failed to open log file: %w", err)
-	}
-	defer logFile.Close()
-
-	logger := log.New(logFile, "", log.LstdFlags)
-	logger.Printf("%s daemon running (pid=%d, docker-socket=%s)", cfg.AppName, os.Getpid(), cfg.DockerSocket)
+	logger.Printf("traffic-cone is now running (pid=%d, docker-socket=%s)", os.Getpid(), cfg.DockerSocket)
 
 	// Initialize Docker client
 	cli, err := client.New(client.WithHost(dockerHostFromSocket(cfg.DockerSocket)))
