@@ -29,7 +29,7 @@ Common flags:
 - `-docker-socket` Path to Docker socket (default: `/var/run/docker.sock`)
 - `-haproxy-data-plane-api-address` HAProxy Data Plane API service address (default: `http://127.0.0.1:5555`)
 - `-haproxy-data-plane-api-username` HAProxy Data Plane API username
-- `-haproxy-data-plane-api-password` HAProxy Data Plane API password
+- `-haproxy-data-plane-api-password-file` Path to file containing HAProxy Data Plane API password (or set `HAPROXY_DATA_PLANE_API_PASSWORD`)
 
 ## Build with version metadata
 

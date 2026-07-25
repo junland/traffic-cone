@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"traffic-cone/internal/daemon"
 )
@@ -24,20 +25,26 @@ func Run(args []string) int {
 	dockerSocket := flags.String("docker-socket", "/var/run/docker.sock", "Path to Docker socket")
 	haproxyDataPlaneAPIAddress := flags.String("haproxy-data-plane-api-address", "http://127.0.0.1:5555", "HAProxy Data Plane API service address")
 	haproxyDataPlaneAPIUsername := flags.String("haproxy-data-plane-api-username", "", "HAProxy Data Plane API username")
-	haproxyDataPlaneAPIPassword := flags.String("haproxy-data-plane-api-password", "", "HAProxy Data Plane API password")
+	haproxyDataPlaneAPIPasswordFile := flags.String("haproxy-data-plane-api-password-file", "", "Path to file containing HAProxy Data Plane API password")
 
 	if err := flags.Parse(args[1:]); err != nil {
 		fmt.Fprintf(os.Stderr, "Error parsing flags: %v\n", err)
 		return 1
 	}
 
+	haproxyDataPlaneAPIPassword, err := resolveHAProxyDataPlanePassword(*haproxyDataPlaneAPIPasswordFile)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error reading HAProxy Data Plane API password: %v\n", err)
+		return 1
+	}
+
 	cfg := daemon.RunConfig{
-		AppName:                        daemonName,
-		PIDFile:                        *pidFile,
-		DockerSocket:                   *dockerSocket,
-		HAProxyDataPlaneAPIAddress:     *haproxyDataPlaneAPIAddress,
-		HAProxyDataPlaneAPIUsername:    *haproxyDataPlaneAPIUsername,
-		HAProxyDataPlaneAPIPassword:    *haproxyDataPlaneAPIPassword,
+		AppName:                     daemonName,
+		PIDFile:                     *pidFile,
+		DockerSocket:                *dockerSocket,
+		HAProxyDataPlaneAPIAddress:  *haproxyDataPlaneAPIAddress,
+		HAProxyDataPlaneAPIUsername: *haproxyDataPlaneAPIUsername,
+		HAProxyDataPlaneAPIPassword: haproxyDataPlaneAPIPassword,
 	}
 
 	if err := daemon.Start(cfg); err != nil {
@@ -46,4 +53,15 @@ func Run(args []string) int {
 	}
 
 	return 0
+}
+
+func resolveHAProxyDataPlanePassword(passwordFile string) (string, error) {
+	if passwordFile != "" {
+		passwordData, err := os.ReadFile(passwordFile)
+		if err != nil {
+			return "", err
+		}
+		return strings.TrimSpace(string(passwordData)), nil
+	}
+	return os.Getenv("HAPROXY_DATA_PLANE_API_PASSWORD"), nil
 }

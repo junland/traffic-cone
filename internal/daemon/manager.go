@@ -38,7 +38,7 @@ func Start(cfg RunConfig) error {
 	}
 	defer releasePID()
 
-	log.Printf("traffic-cone is now running (pid=%d, docker-socket=%s, haproxy-data-plane-api-address=%s)", os.Getpid(), cfg.DockerSocket, cfg.HAProxyDataPlaneAPIAddress)
+	log.Printf("traffic-cone is now running (pid=%d, docker-socket=%s)", os.Getpid(), cfg.DockerSocket)
 
 	// Initialize Docker client
 	cli, err := client.New(client.WithHost(dockerHostFromSocket(cfg.DockerSocket)))
