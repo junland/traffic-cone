@@ -5,34 +5,71 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"traffic-cone/internal/daemon"
 )
 
+// maxHAProxyDataPlanePasswordFileSize limits credential file size to prevent reading unbounded input.
+const maxHAProxyDataPlanePasswordFileSize = 4 * 1024
+
 // Run is the main entry point for the application.
 func Run(args []string) int {
-	if len(args) < 1 {
-		fmt.Fprintln(os.Stderr, "Usage: traffic-cone [flags]")
-		return 1
-	}
+	flags := flag.NewFlagSet("traffic-cone", flag.ContinueOnError)
+	flags.SetOutput(os.Stderr)
 
-	pidFile := flags.String("pid-file", filepath.Join(os.TempDir(), fmt.Sprintf("%s.pid", daemonName)), "Path to PID file")
+	pidFile := flags.String("pid-file", filepath.Join(os.TempDir(), "traffic-cone.pid"), "Path to PID file")
 	dockerSocket := flags.String("docker-socket", "/var/run/docker.sock", "Path to Docker socket")
+	haproxyDataPlaneAPIAddress := flags.String("haproxy-data-plane-api-address", "http://127.0.0.1:5555", "HAProxy Data Plane API service address")
+	haproxyDataPlaneAPIUsername := flags.String("haproxy-data-plane-api-username", "", "HAProxy Data Plane API username")
+	haproxyDataPlaneAPIPasswordFile := flags.String("haproxy-data-plane-api-password-file", "", "Path to file containing HAProxy Data Plane API password")
 
-	if err := flags.Parse(args[1:]); err != nil {
+	if err := flags.Parse(args); err != nil {
 		fmt.Fprintf(os.Stderr, "Error parsing flags: %v\n", err)
 		return 1
 	}
 
+	haproxyDataPlaneAPIPassword, err := resolveHAProxyDataPlanePassword(*haproxyDataPlaneAPIPasswordFile)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error reading HAProxy Data Plane API password: %v\n", err)
+		return 1
+	}
+
 	cfg := daemon.RunConfig{
-		PIDFile:      *pidFile,
-		DockerSocket: *dockerSocket,
+		PIDFile:                     *pidFile,
+		DockerSocket:                *dockerSocket,
+		HAProxyDataPlaneAPIAddress:  *haproxyDataPlaneAPIAddress,
+		HAProxyDataPlaneAPIUsername: *haproxyDataPlaneAPIUsername,
+		HAProxyDataPlaneAPIPassword: haproxyDataPlaneAPIPassword,
 	}
 
 	if err := daemon.Start(cfg); err != nil {
-		fmt.Fprintf(os.Stderr, "Error starting traffic-cone\n", err)
+		fmt.Fprintf(os.Stderr, "Error starting traffic-cone: %v\n", err)
 		return 1
 	}
 
 	return 0
+}
+
+func resolveHAProxyDataPlanePassword(passwordFile string) (string, error) {
+	if passwordFile != "" {
+		info, err := os.Stat(passwordFile)
+		if err != nil {
+			return "", err
+		}
+		if info.Size() > maxHAProxyDataPlanePasswordFileSize {
+			return "", fmt.Errorf(
+				"password file size (%d bytes) exceeds maximum allowed size (%d bytes)",
+				info.Size(),
+				maxHAProxyDataPlanePasswordFileSize,
+			)
+		}
+
+		passwordData, err := os.ReadFile(passwordFile)
+		if err != nil {
+			return "", err
+		}
+		return strings.TrimSpace(string(passwordData)), nil
+	}
+	return os.Getenv("HAPROXY_DATA_PLANE_API_PASSWORD"), nil
 }

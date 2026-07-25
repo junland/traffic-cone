@@ -13,10 +13,12 @@ import (
 
 // RunConfig controls daemon runtime behavior.
 type RunConfig struct {
-	AppName      string
-	PIDFile      string
-	LogFile      string
-	DockerSocket string
+	PIDFile                     string
+	LogFile                     string
+	DockerSocket                string
+	HAProxyDataPlaneAPIAddress  string
+	HAProxyDataPlaneAPIUsername string
+	HAProxyDataPlaneAPIPassword string
 }
 
 // Start runs the daemon event listening loop in the foreground.
@@ -24,7 +26,7 @@ func Start(cfg RunConfig) error {
 	if cfg.PIDFile == "" {
 		return errors.New("pid file is required")
 	}
-	
+
 	if cfg.DockerSocket == "" {
 		return errors.New("docker socket is required")
 	}
@@ -35,7 +37,7 @@ func Start(cfg RunConfig) error {
 	}
 	defer releasePID()
 
-	logger.Printf("traffic-cone is now running (pid=%d, docker-socket=%s)", os.Getpid(), cfg.DockerSocket)
+	log.Printf("traffic-cone is now running (pid=%d, docker-socket=%s)", os.Getpid(), cfg.DockerSocket)
 
 	// Initialize Docker client
 	cli, err := client.New(client.WithHost(dockerHostFromSocket(cfg.DockerSocket)))
