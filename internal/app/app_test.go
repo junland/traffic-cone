@@ -19,8 +19,6 @@ func TestRunNoArgs(t *testing.T) {
 }
 
 func TestResolveHAProxyDataPlanePasswordFromFile(t *testing.T) {
-	t.Parallel()
-
 	passwordFile := filepath.Join(t.TempDir(), "password.txt")
 	if err := os.WriteFile(passwordFile, []byte(" secret \n"), 0o600); err != nil {
 		t.Fatalf("write password file: %v", err)
@@ -48,8 +46,6 @@ func TestResolveHAProxyDataPlanePasswordFromEnv(t *testing.T) {
 }
 
 func TestResolveHAProxyDataPlanePasswordFileTooLarge(t *testing.T) {
-	t.Parallel()
-
 	passwordFile := filepath.Join(t.TempDir(), "password.txt")
 	oversized := strings.Repeat("x", maxHAProxyDataPlanePasswordFileSize+1)
 	if err := os.WriteFile(passwordFile, []byte(oversized), 0o600); err != nil {
