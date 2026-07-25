@@ -13,7 +13,6 @@ import (
 
 // RunConfig controls daemon runtime behavior.
 type RunConfig struct {
-	AppName                     string
 	PIDFile                     string
 	LogFile                     string
 	DockerSocket                string
