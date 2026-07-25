@@ -34,6 +34,7 @@ func TestResolveHAProxyDataPlanePasswordFromFile(t *testing.T) {
 }
 
 func TestResolveHAProxyDataPlanePasswordFromEnv(t *testing.T) {
+	// Intentionally not parallel: this test mutates process env via t.Setenv.
 	t.Setenv("HAPROXY_DATA_PLANE_API_PASSWORD", "env-secret")
 
 	got, err := resolveHAProxyDataPlanePassword("")
