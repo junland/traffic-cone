@@ -10,6 +10,8 @@ import (
 	"traffic-cone/internal/daemon"
 )
 
+const maxHAProxyDataPlanePasswordFileSize = 4 * 1024
+
 // Run is the main entry point for the application.
 func Run(args []string) int {
 	if len(args) < 1 {
@@ -57,6 +59,14 @@ func Run(args []string) int {
 
 func resolveHAProxyDataPlanePassword(passwordFile string) (string, error) {
 	if passwordFile != "" {
+		info, err := os.Stat(passwordFile)
+		if err != nil {
+			return "", err
+		}
+		if info.Size() > maxHAProxyDataPlanePasswordFileSize {
+			return "", fmt.Errorf("password file exceeds %d bytes", maxHAProxyDataPlanePasswordFileSize)
+		}
+
 		passwordData, err := os.ReadFile(passwordFile)
 		if err != nil {
 			return "", err
