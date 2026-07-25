@@ -27,6 +27,9 @@ Common flags:
 
 - `-pid-file` Path to PID file (default: `./<daemon-name>.pid`)
 - `-docker-socket` Path to Docker socket (default: `/var/run/docker.sock`)
+- `-haproxy-data-plane-api-address` HAProxy Data Plane API service address (default: `http://127.0.0.1:5555`)
+- `-haproxy-data-plane-api-username` HAProxy Data Plane API username
+- `-haproxy-data-plane-api-password` HAProxy Data Plane API password
 
 ## Build with version metadata
 
