@@ -16,11 +16,7 @@ go build -o bin/traffic-cone ./cmd/traffic-cone
 ## CLI usage
 
 ```text
-traffic-cone <daemon-name> [flags]
-
-Behavior:
-  Starts the program in the foreground.
-  Use Ctrl+C to stop.
+traffic-cone [flags]
 ```
 
 Common flags:
