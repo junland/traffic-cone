@@ -11,25 +11,20 @@ import (
 )
 
 const maxHAProxyDataPlanePasswordFileSize = 4 * 1024
+const defaultAppName = "traffic-cone"
 
 // Run is the main entry point for the application.
 func Run(args []string) int {
-	if len(args) < 1 {
-		fmt.Fprintln(os.Stderr, "Usage: traffic-cone <daemon-name> [flags]")
-		return 1
-	}
-
-	daemonName := args[0]
 	flags := flag.NewFlagSet("traffic-cone", flag.ContinueOnError)
 	flags.SetOutput(os.Stderr)
 
-	pidFile := flags.String("pid-file", filepath.Join(os.TempDir(), fmt.Sprintf("%s.pid", daemonName)), "Path to PID file")
+	pidFile := flags.String("pid-file", filepath.Join(os.TempDir(), fmt.Sprintf("%s.pid", defaultAppName)), "Path to PID file")
 	dockerSocket := flags.String("docker-socket", "/var/run/docker.sock", "Path to Docker socket")
 	haproxyDataPlaneAPIAddress := flags.String("haproxy-data-plane-api-address", "http://127.0.0.1:5555", "HAProxy Data Plane API service address")
 	haproxyDataPlaneAPIUsername := flags.String("haproxy-data-plane-api-username", "", "HAProxy Data Plane API username")
 	haproxyDataPlaneAPIPasswordFile := flags.String("haproxy-data-plane-api-password-file", "", "Path to file containing HAProxy Data Plane API password")
 
-	if err := flags.Parse(args[1:]); err != nil {
+	if err := flags.Parse(args); err != nil {
 		fmt.Fprintf(os.Stderr, "Error parsing flags: %v\n", err)
 		return 1
 	}
@@ -41,7 +36,7 @@ func Run(args []string) int {
 	}
 
 	cfg := daemon.RunConfig{
-		AppName:                     daemonName,
+		AppName:                     defaultAppName,
 		PIDFile:                     *pidFile,
 		DockerSocket:                *dockerSocket,
 		HAProxyDataPlaneAPIAddress:  *haproxyDataPlaneAPIAddress,

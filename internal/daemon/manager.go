@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	stdlog "log"
+	"log"
 	"os"
 	"time"
 
@@ -38,7 +38,7 @@ func Start(cfg RunConfig) error {
 	}
 	defer releasePID()
 
-	stdlog.Printf("traffic-cone is now running (pid=%d, docker-socket=%s)", os.Getpid(), cfg.DockerSocket)
+	log.Printf("traffic-cone is now running (pid=%d, docker-socket=%s)", os.Getpid(), cfg.DockerSocket)
 
 	// Initialize Docker client
 	cli, err := client.New(client.WithHost(dockerHostFromSocket(cfg.DockerSocket)))
@@ -59,7 +59,7 @@ func Start(cfg RunConfig) error {
 		select {
 		case err := <-errs:
 			if err != nil {
-				stdlog.Printf("Event stream error: %v\n", err)
+				log.Printf("Event stream error: %v\n", err)
 			}
 		case msg := <-messages:
 			// Handle the specific event trigger here
