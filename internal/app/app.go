@@ -10,6 +10,7 @@ import (
 	"traffic-cone/internal/daemon"
 )
 
+// maxHAProxyDataPlanePasswordFileSize limits credential file size to prevent reading unbounded input.
 const maxHAProxyDataPlanePasswordFileSize = 4 * 1024
 
 // Run is the main entry point for the application.
@@ -57,7 +58,11 @@ func resolveHAProxyDataPlanePassword(passwordFile string) (string, error) {
 			return "", err
 		}
 		if info.Size() > maxHAProxyDataPlanePasswordFileSize {
-			return "", fmt.Errorf("password file exceeds %d bytes", maxHAProxyDataPlanePasswordFileSize)
+			return "", fmt.Errorf(
+				"password file size (%d bytes) exceeds maximum allowed size (%d bytes)",
+				info.Size(),
+				maxHAProxyDataPlanePasswordFileSize,
+			)
 		}
 
 		passwordData, err := os.ReadFile(passwordFile)
