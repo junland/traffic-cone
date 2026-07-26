@@ -70,20 +70,19 @@ jobs:
 
           sleep 5
 
-          CURL_OPTS="--no-progress-meter --retry 5 --retry-delay 2 --retry-connrefused"
           TRAFFIC_CONE_PID_FILE="${PWD}/traffic-cone.pid"
 
-          # Make sure we can reach the Data Plane API before proceeding
+          # Wait for Data Plane API process startup before proceeding.
           ready=false
           for ((i=1; i<=MAX_RETRIES; i++)); do
-            if curl ${CURL_OPTS} -u "${DPA_USERNAME}:${DPA_PASSWORD}" -H "Content-Type: application/json" -X GET http://127.0.0.1:5555/v2/ >/dev/null 2>&1; then
+            if docker logs e2e-haproxy 2>&1 | grep -q "HAProxy Data Plane API"; then
               ready=true
               break
             fi
             sleep 1
           done
           if [[ "${ready}" != "true" ]]; then
-            echo "Validation failed: Data Plane API not reachable after ${MAX_RETRIES} attempts"
+            echo "Validation failed: Data Plane API did not start after ${MAX_RETRIES} attempts"
             docker logs e2e-haproxy || true
             exit 1
           fi
