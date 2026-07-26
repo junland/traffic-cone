@@ -13,13 +13,8 @@ permissions:
 
 jobs:
   validate:
-    name: Validate (HAProxy Data Plane API ${{ matrix.haproxy-data-plane-app-version }})
+    name: Validate
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        haproxy-data-plane-app-version:
-          - "3.4.0"
 
     steps:
       - name: Checkout
@@ -35,7 +30,7 @@ jobs:
         run: go build -o bin/traffic-cone ./cmd/traffic-cone
 
       - name: Pull HAProxy Data Plane API image
-        run: docker pull haproxytech/dataplaneapi:${{ matrix.haproxy-data-plane-app-version }}
+        run: docker pull haproxytech/dataplaneapi:3.4.0
 
       - name: Run traffic-cone and validate Docker events
         run: |
