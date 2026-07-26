@@ -35,16 +35,19 @@ jobs:
       - name: Run traffic-cone and validate Docker events
         run: |
           set -euo pipefail
+          DPA_PASSWORD="dataplanepass"
 
           cleanup() {
-            kill "${DAEMON_PID:-}" >/dev/null 2>&1 || true
+            if [[ -n "${DAEMON_PID:-}" ]]; then
+              kill "$DAEMON_PID" >/dev/null 2>&1 || true
+            fi
             docker rm -f e2e-haproxy >/dev/null 2>&1 || true
             rm -rf .e2e
           }
           trap cleanup EXIT
 
           mkdir -p .e2e
-          cat > .e2e/haproxy.cfg <<'EOF'
+          cat > .e2e/haproxy.cfg <<EOF
           global
             master-worker
 
@@ -62,7 +65,7 @@ jobs:
             server s1 127.0.0.1:8080
 
           userlist controller
-            user dataplane insecure-password dataplanepass
+            user dataplane insecure-password ${DPA_PASSWORD}
           EOF
 
           docker run -d \
@@ -73,16 +76,21 @@ jobs:
 
           docker exec -d e2e-haproxy sh -lc 'dataplaneapi --host 0.0.0.0 --port 5555 --haproxy-bin /usr/local/sbin/haproxy --config-file /usr/local/etc/haproxy/haproxy.cfg --reload-cmd "kill -SIGUSR2 1" --userlist controller --log-level info'
 
+          api_ready=false
           for i in $(seq 1 20); do
-            if curl -fsS -u dataplane:dataplanepass http://127.0.0.1:5555/v2/info >/dev/null; then
+            if curl -fsS -u "dataplane:${DPA_PASSWORD}" http://127.0.0.1:5555/v2/info >/dev/null; then
+              api_ready=true
               break
             fi
             sleep 1
           done
-          curl -fsS -u dataplane:dataplanepass http://127.0.0.1:5555/v2/info >/dev/null
+          if [[ "${api_ready}" != "true" ]]; then
+            echo "Data Plane API failed to become available"
+            exit 1
+          fi
 
           # Start the daemon in the background
-          HAPROXY_DATA_PLANE_API_PASSWORD=dataplanepass \
+          HAPROXY_DATA_PLANE_API_PASSWORD="${DPA_PASSWORD}" \
           ./bin/traffic-cone \
             -haproxy-data-plane-api-address http://127.0.0.1:5555 \
             -haproxy-data-plane-api-username dataplane \
