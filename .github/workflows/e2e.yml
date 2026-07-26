@@ -38,6 +38,7 @@ jobs:
           DPA_PASSWORD="dataplanepass"
 
           cleanup() {
+            set +e
             if [[ -n "${DAEMON_PID:-}" ]]; then
               kill "$DAEMON_PID" >/dev/null 2>&1 || true
             fi
@@ -70,7 +71,7 @@ jobs:
 
           docker run -d \
             --name e2e-haproxy \
-            -p 5555:5555 \
+            -p 127.0.0.1:5555:5555 \
             -v "$PWD/.e2e/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro" \
             haproxytech/haproxy-alpine:3.1
 
@@ -94,6 +95,7 @@ jobs:
           ./bin/traffic-cone \
             -haproxy-data-plane-api-address http://127.0.0.1:5555 \
             -haproxy-data-plane-api-username dataplane \
+            e2e-daemon \
             > e2e.log &
           DAEMON_PID=$!
           
