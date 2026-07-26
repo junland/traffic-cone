@@ -36,6 +36,7 @@ jobs:
         run: |
           set -euo pipefail
           DPA_PASSWORD="dataplanepass"
+          DPA_PASSWORD_HASH="$(openssl passwd -6 "${DPA_PASSWORD}")"
           MAX_RETRIES=20
 
           cleanup() {
@@ -49,7 +50,7 @@ jobs:
           trap cleanup EXIT
 
           mkdir -p .e2e
-          cat > .e2e/haproxy.cfg <<'EOF'
+          cat > .e2e/haproxy.cfg <<EOF
           global
             master-worker
 
@@ -67,7 +68,7 @@ jobs:
             server s1 127.0.0.1:8081
 
           userlist controller
-            user dataplane password $6$d8ldVZTuACxazYAL$GYREALcXswI/j6xSgwItJpLAB51ZazNsBfGpKJhiT7quZD4PoSk.j.qN5VkHbISfvtCC8jVetf0YDE7cAit6d0
+            user dataplane password ${DPA_PASSWORD_HASH}
           EOF
 
           docker run -d \
