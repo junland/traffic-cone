@@ -29,13 +29,64 @@ jobs:
       - name: Build CLI binary
         run: go build -o bin/traffic-cone ./cmd/traffic-cone
 
-      - name: Pull HAProxy Data Plane API image
-        run: docker pull haproxytech/dataplaneapi:3.4.0
+      - name: Pull HAProxy image
+        run: docker pull haproxytech/haproxy-alpine:3.1
 
       - name: Run traffic-cone and validate Docker events
         run: |
+          set -euo pipefail
+
+          cleanup() {
+            kill "${DAEMON_PID:-}" >/dev/null 2>&1 || true
+            docker rm -f e2e-haproxy >/dev/null 2>&1 || true
+            rm -rf .e2e
+          }
+          trap cleanup EXIT
+
+          mkdir -p .e2e
+          cat > .e2e/haproxy.cfg <<'EOF'
+          global
+            master-worker
+
+          defaults
+            mode http
+            timeout connect 5s
+            timeout client 30s
+            timeout server 30s
+
+          frontend fe
+            bind *:8080
+            default_backend be
+
+          backend be
+            server s1 127.0.0.1:8080
+
+          userlist controller
+            user dataplane insecure-password dataplanepass
+          EOF
+
+          docker run -d \
+            --name e2e-haproxy \
+            -p 5555:5555 \
+            -v "$PWD/.e2e/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro" \
+            haproxytech/haproxy-alpine:3.1
+
+          docker exec -d e2e-haproxy sh -lc 'dataplaneapi --host 0.0.0.0 --port 5555 --haproxy-bin /usr/local/sbin/haproxy --config-file /usr/local/etc/haproxy/haproxy.cfg --reload-cmd "kill -SIGUSR2 1" --userlist controller --log-level info'
+
+          for i in $(seq 1 20); do
+            if curl -fsS -u dataplane:dataplanepass http://127.0.0.1:5555/v2/info >/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          curl -fsS -u dataplane:dataplanepass http://127.0.0.1:5555/v2/info >/dev/null
+
           # Start the daemon in the background
-          ./bin/traffic-cone e2e-daemon > e2e.log &
+          HAPROXY_DATA_PLANE_API_PASSWORD=dataplanepass \
+          ./bin/traffic-cone \
+            -haproxy-data-plane-api-address http://127.0.0.1:5555 \
+            -haproxy-data-plane-api-username dataplane \
+            > e2e.log &
           DAEMON_PID=$!
           
           # Wait a moment for the daemon to start and subscribe to events
