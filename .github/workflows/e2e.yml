@@ -69,9 +69,6 @@ jobs:
 
           sleep 5
 
-          # Make sure we can reach the Data Plane API before proceeding
-          curl -u "${DPA_USERNAME}:${DPA_PASSWORD}" -H "Content-Type: application/json" --no-progress-meter -X GET http://127.0.0.1:5555/v2/
-
           api_ready=false
           for i in $(seq 1 "${MAX_RETRIES}"); do
             if curl -fsS -u "${DPA_USERNAME}:${DPA_PASSWORD}" http://127.0.0.1:5555/v2/info >/dev/null; then
