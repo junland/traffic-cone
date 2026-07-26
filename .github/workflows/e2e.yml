@@ -97,7 +97,6 @@ jobs:
           ./bin/traffic-cone \
             -haproxy-data-plane-api-address http://127.0.0.1:5555 \
             -haproxy-data-plane-api-username "${DPA_USERNAME}" \
-            e2e-daemon \
             > e2e.log &
           DAEMON_PID=$!
           
