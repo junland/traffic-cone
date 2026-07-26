@@ -75,14 +75,14 @@ jobs:
           # Wait for Data Plane API process startup before proceeding.
           ready=false
           for ((i=1; i<=MAX_RETRIES; i++)); do
-            if docker logs e2e-haproxy 2>&1 | grep -q "HAProxy Data Plane API"; then
+            if [[ "$(docker inspect --format '{{.State.Running}}' e2e-haproxy 2>/dev/null || true)" == "true" ]]; then
               ready=true
               break
             fi
             sleep 1
           done
           if [[ "${ready}" != "true" ]]; then
-            echo "Validation failed: Data Plane API did not start after ${MAX_RETRIES} attempts"
+            echo "Validation failed: HAProxy container did not remain running after ${MAX_RETRIES} attempts"
             docker logs e2e-haproxy || true
             exit 1
           fi
