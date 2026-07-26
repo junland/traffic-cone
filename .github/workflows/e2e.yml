@@ -67,9 +67,8 @@ jobs:
             server s1 127.0.0.1:8081
 
           userlist controller
-            user dataplane insecure-password DPA_PASSWORD_PLACEHOLDER
+            user dataplane password $6$d8ldVZTuACxazYAL$GYREALcXswI/j6xSgwItJpLAB51ZazNsBfGpKJhiT7quZD4PoSk.j.qN5VkHbISfvtCC8jVetf0YDE7cAit6d0
           EOF
-          perl -0pi -e "s/DPA_PASSWORD_PLACEHOLDER/\Q${DPA_PASSWORD}\E/g" .e2e/haproxy.cfg
 
           docker run -d \
             --name e2e-haproxy \
