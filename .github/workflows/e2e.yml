@@ -81,7 +81,7 @@ jobs:
             exit 1
           fi
 
-          # Start the daemon in the background
+          # Start traffic-cone in the background
           HAPROXY_DATA_PLANE_API_PASSWORD_HASH="${DPA_PASSWORD_HASH}" \
           ./bin/traffic-cone \
             -haproxy-data-plane-api-address http://127.0.0.1:5555 \
@@ -99,21 +99,21 @@ jobs:
           # Wait for events to be processed
           sleep 2
           
-          # Terminate the daemon
+          # Terminate traffic-cone
           kill $DAEMON_PID || true
-          
+
           # Display the output for debugging
-          echo "Daemon output:"
+          echo "traffic-cone output:"
           cat e2e.log
           
           # Validate that it captured the events for both containers
           if ! grep -q "e2e-test-1" e2e.log; then
-            echo "Validation failed: e2e-test-1 not found in daemon output"
+            echo "Validation failed: e2e-test-1 not found in traffic-cone output"
             exit 1
           fi
           
           if ! grep -q "e2e-test-2" e2e.log; then
-            echo "Validation failed: e2e-test-2 not found in daemon output"
+            echo "Validation failed: e2e-test-2 not found in traffic-cone output"
             exit 1
           fi
           
