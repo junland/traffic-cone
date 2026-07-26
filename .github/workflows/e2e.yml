@@ -63,11 +63,12 @@ jobs:
             default_backend be
 
           backend be
-            server s1 127.0.0.1:8080
+            server s1 127.0.0.1:8081
 
           userlist controller
-            user dataplane insecure-password ${DPA_PASSWORD}
+            user dataplane insecure-password __DPA_PASSWORD__
           EOF
+          sed -i "s/__DPA_PASSWORD__/${DPA_PASSWORD}/g" .e2e/haproxy.cfg
 
           docker run -d \
             --name e2e-haproxy \
