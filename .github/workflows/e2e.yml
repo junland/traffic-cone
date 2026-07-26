@@ -63,7 +63,7 @@ jobs:
             --name e2e-haproxy \
             -e DPA_USERNAME="${DPA_USERNAME}" \
             -e DPA_PASSWORD_HASH="${DPA_PASSWORD_HASH}" \
-            -p 127.0.0.1:5555:5555 \
+            -p 5555:5555 \
             -v "$PWD/.github/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro" \
             "${HAPROXY_DOCKER_IMAGE}"
 
