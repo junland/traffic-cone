@@ -29,10 +29,76 @@ jobs:
       - name: Build CLI binary
         run: go build -o bin/traffic-cone ./cmd/traffic-cone
 
+      - name: Pull HAProxy image
+        run: docker pull haproxytech/haproxy-alpine:3.1
+
       - name: Run traffic-cone and validate Docker events
         run: |
+          set -euo pipefail
+          DPA_USERNAME="dataplane"
+          DPA_PASSWORD="dataplanepass"
+          DPA_PASSWORD_HASH="$(openssl passwd -6 "${DPA_PASSWORD}")"
+          # Give Data Plane API up to 20s to initialize with HAProxy before considering startup failed.
+          MAX_RETRIES=20
+
+          cleanup() {
+            set +e
+            if [[ -n "${DAEMON_PID:-}" ]]; then
+              if kill -0 "$DAEMON_PID" >/dev/null 2>&1; then
+                kill "$DAEMON_PID" >/dev/null 2>&1 || true
+                wait "$DAEMON_PID" >/dev/null 2>&1 || true
+              fi
+            fi
+            docker rm -f e2e-haproxy >/dev/null 2>&1 || true
+            rm -rf .e2e
+          }
+          trap cleanup EXIT
+
+          mkdir -p .e2e
+          cp .github/haproxy.cfg .e2e/haproxy.cfg
+          cat >> .e2e/haproxy.cfg <<EOF
+          userlist controller
+            user ${DPA_USERNAME} password ${DPA_PASSWORD_HASH}
+          EOF
+
+          docker run -d \
+            --name e2e-haproxy \
+            -p 127.0.0.1:5555:5555 \
+            -v "$PWD/.e2e/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro" \
+            haproxytech/haproxy-alpine:3.1
+
+          # --host 0.0.0.0 is required so the host can reach Data Plane API via the published 127.0.0.1:5555 port.
+          docker exec -d e2e-haproxy sh -lc '
+            dataplaneapi \
+              --host 0.0.0.0 \
+              --port 5555 \
+              --haproxy-bin /usr/local/sbin/haproxy \
+              --config-file /usr/local/etc/haproxy/haproxy.cfg \
+              --reload-cmd "kill -SIGUSR2 1" \
+              --userlist controller \
+              --log-level info
+          '
+
+          api_ready=false
+          for i in $(seq 1 "${MAX_RETRIES}"); do
+            if curl -fsS -u "${DPA_USERNAME}:${DPA_PASSWORD}" http://127.0.0.1:5555/v2/info >/dev/null; then
+              api_ready=true
+              break
+            fi
+            sleep 1
+          done
+          if [[ "${api_ready}" != "true" ]]; then
+            echo "Data Plane API failed to become available"
+            exit 1
+          fi
+
           # Start the daemon in the background
-          ./bin/traffic-cone e2e-daemon > e2e.log &
+          HAPROXY_DATA_PLANE_API_PASSWORD="${DPA_PASSWORD}" \
+          ./bin/traffic-cone \
+            -haproxy-data-plane-api-address http://127.0.0.1:5555 \
+            -haproxy-data-plane-api-username "${DPA_USERNAME}" \
+            e2e-daemon \
+            > e2e.log &
           DAEMON_PID=$!
           
           # Wait a moment for the daemon to start and subscribe to events
