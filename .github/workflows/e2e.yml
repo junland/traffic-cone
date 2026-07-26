@@ -73,7 +73,7 @@ jobs:
           TRAFFIC_CONE_PID_FILE="${PWD}/traffic-cone.pid"
 
           # Make sure we can reach the Data Plane API before proceeding
-          curl ${CURL_OPTS} -u "${DPA_USERNAME}:${DPA_PASSWORD}" -H "Content-Type: application/json" -X GET http://127.0.0.1:5555/v2/
+          curl ${CURL_OPTS} -u "${DPA_USERNAME}:${DPA_PASSWORD}" -H "Content-Type: application/json" -X GET http://127.0.0.1:5555/v2/ 2>&1
 
           # Start traffic-cone in the background
           HAPROXY_DATA_PLANE_API_PASSWORD_HASH="${DPA_PASSWORD_HASH}" \
