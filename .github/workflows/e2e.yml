@@ -75,6 +75,7 @@ jobs:
             -v "$PWD/.e2e/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro" \
             haproxytech/haproxy-alpine:3.1
 
+          # --host 0.0.0.0 is required so the host can reach Data Plane API via the published 127.0.0.1:5555 port.
           docker exec -d e2e-haproxy sh -lc 'dataplaneapi --host 0.0.0.0 --port 5555 --haproxy-bin /usr/local/sbin/haproxy --config-file /usr/local/etc/haproxy/haproxy.cfg --reload-cmd "kill -SIGUSR2 1" --userlist controller --log-level info'
 
           api_ready=false
