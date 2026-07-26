@@ -49,10 +49,10 @@ jobs:
 
           cleanup() {
             set +e
-            if [[ -n "${DAEMON_PID:-}" ]]; then
-              if kill -0 "$DAEMON_PID" >/dev/null 2>&1; then
-                kill "$DAEMON_PID" >/dev/null 2>&1 || true
-                wait "$DAEMON_PID" >/dev/null 2>&1 || true
+            if [[ -n "${TRAFFIC_CONE_PID_FILE:-}" ]]; then
+              if kill -0 "$(cat "${TRAFFIC_CONE_PID_FILE}")" >/dev/null 2>&1; then
+                kill "$(cat "${TRAFFIC_CONE_PID_FILE}")" >/dev/null 2>&1 || true
+                wait "$(cat "${TRAFFIC_CONE_PID_FILE}")" >/dev/null 2>&1 || true
               fi
             fi
             docker rm -f e2e-haproxy >/dev/null 2>&1 || true
@@ -69,29 +69,19 @@ jobs:
 
           sleep 5
 
-          # Make sure we can reach the Data Plane API before proceeding
-          curl -u "${DPA_USERNAME}:${DPA_PASSWORD}" -H "Content-Type: application/json" --no-progress-meter -X GET http://127.0.0.1:5555/v2/
+          CURL_OPTS="--no-progress-meter --retry 5 --retry-delay 2 --retry-connrefused"
+          TRAFFIC_CONE_PID_FILE="${PWD}/traffic-cone.pid"
 
-          api_ready=false
-          for i in $(seq 1 "${MAX_RETRIES}"); do
-            if curl -fsS -u "${DPA_USERNAME}:${DPA_PASSWORD}" http://127.0.0.1:5555/v2/info >/dev/null; then
-              api_ready=true
-              break
-            fi
-            sleep 1
-          done
-          if [[ "${api_ready}" != "true" ]]; then
-            echo "Data Plane API failed to become available"
-            exit 1
-          fi
+          # Make sure we can reach the Data Plane API before proceeding
+          curl ${CURL_OPTS} -u "${DPA_USERNAME}:${DPA_PASSWORD}" -H "Content-Type: application/json" -X GET http://127.0.0.1:5555/v2/
 
           # Start traffic-cone in the background
           HAPROXY_DATA_PLANE_API_PASSWORD_HASH="${DPA_PASSWORD_HASH}" \
           ./bin/traffic-cone \
+            -pid-file "${TRAFFIC_CONE_PID_FILE}" \
             -haproxy-data-plane-api-address http://127.0.0.1:5555 \
             -haproxy-data-plane-api-username "${DPA_USERNAME}" \
-            > e2e.log &
-          DAEMON_PID=$!
+            > e2e.log 2>&1 &
           
           # Wait a moment for the daemon to start and subscribe to events
           sleep 2
@@ -104,7 +94,7 @@ jobs:
           sleep 2
           
           # Terminate traffic-cone
-          kill $DAEMON_PID || true
+          kill $(cat "${TRAFFIC_CONE_PID_FILE}") || true
 
           # Display the output for debugging
           echo "traffic-cone output:"
