@@ -30,7 +30,7 @@ jobs:
         run: go build -o bin/traffic-cone ./cmd/traffic-cone
 
       - name: Pull HAProxy image
-        run: docker pull haproxytech/haproxy-alpine:3.1
+        run: docker pull haproxytech/haproxy:alpine-s6-3.5
 
       - name: Run traffic-cone and validate Docker events
         run: |
