@@ -49,10 +49,11 @@ jobs:
 
           cleanup() {
             set +e
-            if [[ -n "${TRAFFIC_CONE_PID_FILE:-}" ]]; then
-              if kill -0 "$(cat "${TRAFFIC_CONE_PID_FILE}")" >/dev/null 2>&1; then
-                kill "$(cat "${TRAFFIC_CONE_PID_FILE}")" >/dev/null 2>&1 || true
-                wait "$(cat "${TRAFFIC_CONE_PID_FILE}")" >/dev/null 2>&1 || true
+            if [[ -n "${TRAFFIC_CONE_PID_FILE:-}" ]] && [[ -f "${TRAFFIC_CONE_PID_FILE}" ]]; then
+              TRAFFIC_CONE_PID="$(cat "${TRAFFIC_CONE_PID_FILE}")"
+              if kill -0 "${TRAFFIC_CONE_PID}" >/dev/null 2>&1; then
+                kill "${TRAFFIC_CONE_PID}" >/dev/null 2>&1 || true
+                wait "${TRAFFIC_CONE_PID}" >/dev/null 2>&1 || true
               fi
             fi
             docker rm -f e2e-haproxy >/dev/null 2>&1 || true
@@ -73,10 +74,22 @@ jobs:
           TRAFFIC_CONE_PID_FILE="${PWD}/traffic-cone.pid"
 
           # Make sure we can reach the Data Plane API before proceeding
-          curl ${CURL_OPTS} -u "${DPA_USERNAME}:${DPA_PASSWORD}" -H "Content-Type: application/json" -X GET http://127.0.0.1:5555/v2/ 2>&1
+          ready=false
+          for ((i=1; i<=MAX_RETRIES; i++)); do
+            if curl ${CURL_OPTS} -H "Content-Type: application/json" -X GET http://127.0.0.1:5555/v2/ >/dev/null 2>&1; then
+              ready=true
+              break
+            fi
+            sleep 1
+          done
+          if [[ "${ready}" != "true" ]]; then
+            echo "Validation failed: Data Plane API not reachable after ${MAX_RETRIES}s"
+            docker logs e2e-haproxy || true
+            exit 1
+          fi
 
           # Start traffic-cone in the background
-          HAPROXY_DATA_PLANE_API_PASSWORD_HASH="${DPA_PASSWORD_HASH}" \
+          HAPROXY_DATA_PLANE_API_PASSWORD="${DPA_PASSWORD}" \
           ./bin/traffic-cone \
             -pid-file "${TRAFFIC_CONE_PID_FILE}" \
             -haproxy-data-plane-api-address http://127.0.0.1:5555 \
