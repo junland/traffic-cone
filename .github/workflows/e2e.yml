@@ -65,10 +65,12 @@ jobs:
             -e DPA_USERNAME="${DPA_USERNAME}" \
             -e DPA_PASSWORD_HASH="${DPA_PASSWORD_HASH}" \
             -p 5555:5555 \
-            -v "$PWD/.github/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro" \
+            -v "$PWD/.github/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:rw" \
             "${HAPROXY_DOCKER_IMAGE}"
 
           sleep 5
+
+          curl --request GET -u "${DPA_USERNAME}:${DPA_PASSWORD}" http://127.0.0.1:/v3/info
 
           TRAFFIC_CONE_PID_FILE="${PWD}/traffic-cone.pid"
 
