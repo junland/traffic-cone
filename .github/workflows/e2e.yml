@@ -18,7 +18,6 @@ jobs:
 
     env:
       DPA_USERNAME: admin
-      DPA_PASSWORD: admin
       HAPROXY_DOCKER_IMAGE: haproxytech/haproxy:alpine-s6-3.4
 
     steps:
@@ -68,7 +67,10 @@ jobs:
 
           sleep 5
 
-          curl --request GET -u "${DPA_USERNAME}:${DPA_PASSWORD}" --retry 5 http://127.0.0.1:5555/v3/info
+          DPA_PASSWORD_RAW=$(docker exec e2e-haproxy cat /etc/haproxy/dataplaneapi.cfg)
+          export DPA_PASSWORD="$(echo "${DPA_PASSWORD_RAW}" | grep -E '\s*password:' | awk '{print $2}')"
+
+          curl --request GET -u "${DPA_USERNAME}:${DPA_PASSWORD}" --retry 5 --no-progress-meter http://127.0.0.1:5555/v3/info
 
           TRAFFIC_CONE_PID_FILE="${PWD}/traffic-cone.pid"
 
