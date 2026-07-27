@@ -20,7 +20,7 @@ jobs:
       haproxy:
         image: haproxytech/haproxy:alpine-s6-3.4
         volumes:
-          - .github/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg
+          - ${{ github.workspace }}/.github/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg
         ports:
           - 5555:5555
 
