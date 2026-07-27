@@ -26,7 +26,7 @@ jobs:
       - name: See if we can reach the HAProxy service
         run: |
           for i in {1..10}; do
-            if curl -s -u admin:admin http://localhost:5555; then
+            if curl -u admin:admin -H "Content-Type: application/json" --no-progress-meter http://localhost:5555/v3/; then
               echo "HAProxy is up!"
               exit 0
             fi
