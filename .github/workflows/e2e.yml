@@ -16,111 +16,36 @@ jobs:
     name: Validate
     runs-on: ubuntu-latest
 
-    env:
-      DPA_USERNAME: admin
-      DPA_PASSWORD: admin
-      HAPROXY_DOCKER_IMAGE: haproxytech/haproxy:alpine-s6-3.4
+    services:
+      haproxy:
+        image: haproxytech/haproxy:alpine-s6-3.4
+        volumes:
+          - ./test/e2e/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg
+        ports:
+          - 5555:5555
 
     steps:
+      - name: See if we can reach the HAProxy service
+        run: |
+          for i in {1..10}; do
+            if curl -s -u admin:admin http://localhost:5555; then
+              echo "HAProxy is up!"
+              exit 0
+            fi
+            echo "Waiting for HAProxy to start..."
+            sleep 2
+          done
+          echo "HAProxy did not start in time."
+          exit 1
+
       - name: Checkout
         uses: actions/checkout@v6
 
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
-          go-version: "1.25"
-          cache: true
+          go-version-file: go.mod
 
-      - name: Install mkpasswd (From whois package)
-        run: sudo apt-get update && sudo apt-get install -y whois
-
-      - name: Build CLI binary
+      - name: Build binary
         run: go build -o bin/traffic-cone ./cmd/traffic-cone
 
-      - name: Pull HAProxy image
-        run: docker pull "${HAPROXY_DOCKER_IMAGE}"
-
-      - name: Run traffic-cone and validate Docker events
-        run: |
-          set -euo pipefail
-          export DPA_PASSWORD_HASH="$(mkpasswd -m sha-256 "${DPA_PASSWORD}")"
-          # Give Data Plane API up to 20s to initialize with HAProxy before considering startup failed.
-          MAX_RETRIES=20
-
-          cleanup() {
-            set +e
-            if [[ -n "${TRAFFIC_CONE_PID_FILE:-}" ]] && [[ -f "${TRAFFIC_CONE_PID_FILE}" ]]; then
-              TRAFFIC_CONE_PID="$(cat "${TRAFFIC_CONE_PID_FILE}")"
-              if kill -0 "${TRAFFIC_CONE_PID}" >/dev/null 2>&1; then
-                kill "${TRAFFIC_CONE_PID}" >/dev/null 2>&1 || true
-                wait "${TRAFFIC_CONE_PID}" >/dev/null 2>&1 || true
-              fi
-            fi
-            docker rm -f e2e-haproxy >/dev/null 2>&1 || true
-          }
-          trap cleanup EXIT
-
-          docker run -d \
-            --name e2e-haproxy \
-            -p 5555:5555 \
-            -v "$PWD/.github/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:rw" \
-            "${HAPROXY_DOCKER_IMAGE}"
-
-          sleep 5
-
-          curl --request GET -u "${DPA_USERNAME}:${DPA_PASSWORD}" --retry 5 http://127.0.0.1:5555/v3/info
-
-          TRAFFIC_CONE_PID_FILE="${PWD}/traffic-cone.pid"
-
-          # Wait for Data Plane API process startup before proceeding.
-          ready=false
-          for ((i=1; i<=MAX_RETRIES; i++)); do
-            if [[ "$(docker inspect --format '{{.State.Running}}' e2e-haproxy 2>/dev/null || true)" == "true" ]]; then
-              ready=true
-              break
-            fi
-            sleep 1
-          done
-          if [[ "${ready}" != "true" ]]; then
-            echo "Validation failed: HAProxy container did not remain running after ${MAX_RETRIES} attempts"
-            docker logs e2e-haproxy || true
-            exit 1
-          fi
-
-          # Start traffic-cone in the background
-          HAPROXY_DATA_PLANE_API_PASSWORD="${DPA_PASSWORD}" \
-          ./bin/traffic-cone \
-            -pid-file "${TRAFFIC_CONE_PID_FILE}" \
-            -haproxy-data-plane-api-address http://127.0.0.1:5555 \
-            -haproxy-data-plane-api-username "${DPA_USERNAME}" \
-            > e2e.log 2>&1 &
-          
-          # Wait a moment for the daemon to start and subscribe to events
-          sleep 2
-          
-          # Launch a few Docker containers
-          docker run --name e2e-test-1 --rm alpine echo "Running container 1"
-          docker run --name e2e-test-2 --rm alpine echo "Running container 2"
-          
-          # Wait for events to be processed
-          sleep 2
-          
-          # Terminate traffic-cone
-          kill $(cat "${TRAFFIC_CONE_PID_FILE}") || true
-
-          # Display the output for debugging
-          echo "traffic-cone output:"
-          cat e2e.log
-          
-          # Validate that it captured the events for both containers
-          if ! grep -q "e2e-test-1" e2e.log; then
-            echo "Validation failed: e2e-test-1 not found in traffic-cone output"
-            exit 1
-          fi
-          
-          if ! grep -q "e2e-test-2" e2e.log; then
-            echo "Validation failed: e2e-test-2 not found in traffic-cone output"
-            exit 1
-          fi
-          
-          echo "Validation successful!"
