@@ -19,7 +19,7 @@ jobs:
     env:
       DPA_USERNAME: admin
       DPA_PASSWORD: admin
-      HAPROXY_DOCKER_IMAGE: haproxytech/haproxy:alpine-s6-3.5
+      HAPROXY_DOCKER_IMAGE: haproxytech/haproxy:alpine-s6-3.4
 
     steps:
       - name: Checkout
