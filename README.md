@@ -1,10 +1,17 @@
 # traffic-cone
 
-A daemon that listens for Docker events and prints the container names to stdout.
+## Overview
 
-## Features
+A lightweight sidecar process that bridges container runtimes with HAProxy to automate traffic management. By monitoring container lifecycles via the Docker and Podman sockets, it dynamically updates routing rules using the HAProxy DataPlane API—delivering Traefik-like automatic service discovery with the performance, reliability, and enterprise feature set of HAProxy.
 
-- Docker event watching via configured Docker socket
+## Key Features
+
+- **Dynamic Service Discovery:** Listens to real-time events from Docker and Podman container engines to discover, register, and deregister microservices instantly.
+- **HAProxy DataPlane API Integration:** Programmatically configures HAProxy backends, frontends, and ACLs on the fly without requiring process reloads or dropping active connections.
+- **Multi-Runtime Support:** Seamless compatibility with both Docker and daemonless Podman environments out of the box.
+- **Label-Driven Configuration:** Declarative routing rules defined directly via container labels (e.g., host matching, path prefixing, port mapping).
+- **Zero-Downtime Reloads:** Updates traffic routing rules hot-in-memory to ensure zero dropped packets during container deployments or scaling events.
+- **Sidecar Deployment Model:** Operates as a decoupled sidecar alongside HAProxy, maint
 
 ## Quick start
 
